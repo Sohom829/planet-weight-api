@@ -1,0 +1,102 @@
+# Contributing Guidelines
+
+Thank you for considering contributing to this project! To ensure a smooth collaboration, please follow the guidelines below.
+
+## Getting Started
+
+To get started with the project, follow these steps:
+
+1. Fork the repository.
+2. Clone the forked repository to your local machine.
+3. Install the project dependencies by running the following command:
+   ```
+   npm install
+   ```
+4. Build the TypeScript code by running the following command:
+   ```
+   npm run build
+   ```
+
+## Development
+
+Before you start making changes, please ensure that you have the necessary tools and configurations in place.
+
+### TypeScript Configuration
+
+The project uses TypeScript for static type checking and compilation. Here's the TypeScript configuration (`tsconfig.json`) for the project:
+
+```json
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./out",
+    "newLine": "lf",
+    "declarationDir": "./typings",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
+```
+
+### Code
+
+Below is the code that you can work on and make improvements:
+
+```typescript
+import express, { Request, Response } from "express";
+const router = express.Router();
+
+interface Planet {
+  name: string;
+  gravity: number;
+}
+
+const gravitationalForces: { [key: string]: Planet } = {
+  earth: { name: "Earth", gravity: 9.81 },
+  mars: { name: "Mars", gravity: 3.71 },
+  // Rest of the planets...
+};
+
+// Rest of the code...
+
+export default router;
+```
+
+## Submitting Changes
+
+Once you have made the necessary changes and tested them locally, you can submit a pull request with your changes. Please ensure that your pull request adheres to the following guidelines:
+
+1. Provide a descriptive title and description for your pull request.
+2. Include any necessary documentation or updates to existing documentation.
+3. Test your changes to ensure that they are functioning as expected.
+4. Ensure that your code follows the project's coding conventions and style.
+5. Make sure that your changes do not introduce any new linting errors or warnings.
+
+Thank you for your contribution! We appreciate your time and effort in making this project better.
+
+## Code of Conduct
+
+Please note that this project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project, you are expected to uphold this code.
+
+If you have any questions or need further assistance, feel free to reach out to the project maintainers.
+
+Happy coding!
