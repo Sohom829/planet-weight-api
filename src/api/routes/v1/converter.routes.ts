@@ -27,36 +27,17 @@ const gravitationalForces: { [key: string]: Planet } = {
   ganymede: { name: "Ganymede", gravity: 1.428 },
 };
 
-router.get("/gravity.forces.get", (req: Request, res: Response) => {
-  const planet = req.query.planet?.toString() || null;
-  const planets: { [key: string]: Planet } = {
-    earth: { name: "Earth", gravity: 9.81 },
-    mars: { name: "Mars", gravity: 3.71 },
-    sun: { name: "Sun", gravity: 274 },
-    jupiter: { name: "Jupiter", gravity: 24.79 },
-    venus: { name: "Venus", gravity: 8.87 },
-    mercury: { name: "Mercury", gravity: 3.7 },
-    saturn: { name: "Saturn", gravity: 10.44 },
-    uranus: { name: "Uranus", gravity: 8.87 },
-    neptune: { name: "Neptune", gravity: 11.15 },
-    pluto: { name: "Pluto", gravity: 0.62 },
-    phobos: { name: "Phobos", gravity: 0.0057 },
-    deimos: { name: "Deimos", gravity: 0.003 },
-    ceres: { name: "Ceres", gravity: 0.27 },
-    europa: { name: "Europa", gravity: 1.315 },
-    eris: { name: "Eris", gravity: 0.82 },
-    titan: { name: "Titan", gravity: 1.352 },
-    io: { name: "Io", gravity: 1.796 },
-    ganymede: { name: "Ganymede", gravity: 1.428 },
-  };
+router.get("/gravity-forces", (req: Request, res: Response) => {
+  const planet = req.query.planet?.toString();
 
   if (planet) {
-    const selectedPlanet = planets[planet];
-    if (selectedPlanet) {
+    const matchedPlanet = findPlanetByName(planet);
+
+    if (matchedPlanet) {
       return res.json({
         message: {
           body: {
-            [selectedPlanet.name]: selectedPlanet.gravity,
+            [matchedPlanet.name]: matchedPlanet.gravity,
           },
         },
       });
@@ -68,12 +49,13 @@ router.get("/gravity.forces.get", (req: Request, res: Response) => {
       });
     }
   } else {
-    const sortedPlanets = Object.keys(planets).sort();
-    const planetInfo: { [key: string]: number } = {};
-    sortedPlanets.forEach((planetName) => {
-      const planet = planets[planetName];
-      planetInfo[planet.name] = planet.gravity;
-    });
+    const sortedPlanets = Object.values(gravitationalForces).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+    const planetInfo = sortedPlanets.reduce(
+      (info, planet) => ({ ...info, [planet.name]: planet.gravity }),
+      {}
+    );
 
     return res.json({
       message: {
@@ -83,28 +65,11 @@ router.get("/gravity.forces.get", (req: Request, res: Response) => {
   }
 });
 
-router.get("/weight.convert.get", (req: Request, res: Response) => {
+router.get("/weight-conversion", (req: Request, res: Response) => {
   const weightOnEarth = parseFloat(req.query.weight as string);
-  const planetQuery = req.query.planet?.toString().toLowerCase() || "earth";
+  const planetQuery = req.query.planet?.toString().toLowerCase() ?? "earth";
 
-  let matchedPlanet: string | null = null;
-  let maxMatchCount = 0;
-
-  for (const planet in gravitationalForces) {
-    const planetName = planet.toLowerCase();
-    let matchCount = 0;
-
-    for (let i = 0; i < planetQuery.length; i++) {
-      if (planetName.includes(planetQuery[i])) {
-        matchCount++;
-      }
-    }
-
-    if (matchCount > maxMatchCount) {
-      maxMatchCount = matchCount;
-      matchedPlanet = planet;
-    }
-  }
+  const matchedPlanet = findPlanetByName(planetQuery);
 
   if (!matchedPlanet) {
     return res
@@ -114,76 +79,87 @@ router.get("/weight.convert.get", (req: Request, res: Response) => {
 
   const weightOnPlanet = calculateWeightOnPlanet(
     weightOnEarth,
-    gravitationalForces[matchedPlanet].gravity
+    matchedPlanet.gravity
   );
 
   return res.json({
-    planet: gravitationalForces[matchedPlanet].name,
+    planet: matchedPlanet.name,
     weightOnPlanet,
   });
 });
 
-router.get("/weight.convert.planet", (req: Request, res: Response) => {
-  const weightOnSourcePlanet = parseFloat(req.query.weight as string);
-  const sourcePlanetQuery = req.query.source?.toString().toLowerCase();
-  const targetPlanetQuery = req.query.target?.toString().toLowerCase();
+router.get(
+  "/weight-conversion-between-planets",
+  (req: Request, res: Response) => {
+    const weightOnSourcePlanet = parseFloat(req.query.weight as string);
+    const planets = [
+      "Sun",
+      "Moon",
+      "Mars",
+      "Jupiter",
+      "Mercury",
+      "Saturn",
+      "Uranus",
+      "Neptune",
+      "Venus",
+      "Pluto",
+      "Phobos",
+      "Deimos",
+      "Ceres",
+      "Europa",
+      "Eris",
+      "Titan",
+      "Io",
+      "Ganymede",
+    ];
 
-  let sourceMatchedPlanet: string | null = null;
-  let targetMatchedPlanet: string | null = null;
-  let sourceMaxMatchCount = 0;
-  let targetMaxMatchCount = 0;
+    const sourcePlanetQuery =
+      req.query.source?.toString().toLowerCase() ?? "earth";
+    const targetPlanetQuery =
+      req.query.target?.toString().toLowerCase() ?? getRandomPlanet();
 
-  for (const planet in gravitationalForces) {
-    const planetName = planet.toLowerCase();
+    function getRandomPlanet() {
+      const randomIndex = Math.floor(Math.random() * planets.length);
+      return planets[randomIndex];
+    }
+    const sourceMatchedPlanet = findPlanetByName(sourcePlanetQuery);
+    const targetMatchedPlanet = findPlanetByName(targetPlanetQuery);
 
-    if (sourcePlanetQuery) {
-      let matchCount = 0;
-
-      for (let i = 0; i < sourcePlanetQuery.length; i++) {
-        if (planetName.includes(sourcePlanetQuery[i])) {
-          matchCount++;
-        }
-      }
-
-      if (matchCount > sourceMaxMatchCount) {
-        sourceMaxMatchCount = matchCount;
-        sourceMatchedPlanet = planet;
-      }
+    if (!sourceMatchedPlanet || !targetMatchedPlanet) {
+      return res
+        .status(404)
+        .json({ error: true, message: "Out of solar system" });
     }
 
-    if (targetPlanetQuery) {
-      let matchCount = 0;
+    const weightOnTargetPlanet = convertWeightBetweenPlanets(
+      weightOnSourcePlanet,
+      sourceMatchedPlanet.gravity,
+      targetMatchedPlanet.gravity
+    );
 
-      for (let i = 0; i < targetPlanetQuery.length; i++) {
-        if (planetName.includes(targetPlanetQuery[i])) {
-          matchCount++;
-        }
-      }
-
-      if (matchCount > targetMaxMatchCount) {
-        targetMaxMatchCount = matchCount;
-        targetMatchedPlanet = planet;
-      }
-    }
+    return res.json({
+      sourcePlanet: sourceMatchedPlanet.name,
+      weightOnSourcePlanet,
+      targetPlanet: targetMatchedPlanet.name,
+      weightOnTargetPlanet,
+    });
   }
+);
 
-  if (!sourceMatchedPlanet || !targetMatchedPlanet) {
-    return res
-      .status(404)
-      .json({ error: true, message: "Out of solar system" });
-  }
+router.get("/available-planets", (req: Request, res: Response) => {
+  const count =
+    parseInt(req.query.count?.toString() || "18") ||
+    Object.keys(gravitationalForces).length;
+  const planetNames = Object.values(gravitationalForces)
+    .slice(0, count)
+    .map((planet) => planet.name);
 
-  const weightOnTargetPlanet = convertWeightBetweenPlanets(
-    weightOnSourcePlanet,
-    gravitationalForces[sourceMatchedPlanet].gravity,
-    gravitationalForces[targetMatchedPlanet].gravity
-  );
+  console.log(`Planet names (${count}):`, planetNames.join(", "));
 
   return res.json({
-    sourcePlanet: gravitationalForces[sourceMatchedPlanet].name,
-    weightOnSourcePlanet,
-    targetPlanet: gravitationalForces[targetMatchedPlanet].name,
-    weightOnTargetPlanet,
+    message: {
+      body: planetNames,
+    },
   });
 });
 
@@ -208,6 +184,29 @@ function convertWeightBetweenPlanets(
   const weightOnTargetPlanet =
     (weightOnEarth * targetGravity) / gravitationalForces.earth.gravity;
   return weightOnTargetPlanet.toFixed(2);
+}
+
+function findPlanetByName(name: string): Planet | undefined {
+  let matchedPlanet: string | null = null;
+  let maxMatchCount = 0;
+
+  for (const planet in gravitationalForces) {
+    const planetName = planet.toLowerCase();
+    let matchCount = 0;
+
+    for (let i = 0; i < name.length; i++) {
+      if (planetName.includes(name[i])) {
+        matchCount++;
+      }
+    }
+
+    if (matchCount > maxMatchCount) {
+      maxMatchCount = matchCount;
+      matchedPlanet = planet;
+    }
+  }
+
+  return matchedPlanet ? gravitationalForces[matchedPlanet] : undefined;
 }
 
 export default router;
